@@ -21,9 +21,9 @@ const DEFAULT_BADGE_OPTIONS: BadgeOptions = {
  * @class Badge
  */
 export default class Badge {
-  private readonly _badgeOptions: BadgeOptions;
+  private _badgeOptions: BadgeOptions = DEFAULT_BADGE_OPTIONS;
   private readonly _body: any;
-  private readonly _showBadge: boolean;
+  private _showBadge: boolean = false;
 
   /**
    * The text for the badge
@@ -95,9 +95,8 @@ export default class Badge {
    * @memberof Badge
    */
   constructor(body: any, badgeOptions: any) {
-    this._showBadge = !!badgeOptions;
-    this._badgeOptions = { ...DEFAULT_BADGE_OPTIONS, ...badgeOptions };
     this._body = body;
+    this.updateOptions(badgeOptions);
   }
 
   /**
@@ -134,6 +133,22 @@ export default class Badge {
         </g>
       </svg>
     `;
+  }
+
+  /**
+   * Updates the badge options
+   * Particularly useful when neededing to add or remove a badge on the node by updating it
+   *
+   * @param {*} badgeOptions
+   * new set of badge options to apply
+   * @memberof Badge
+   */
+  public updateOptions(badgeOptions: any) {
+    this._showBadge = !!badgeOptions;
+    this._badgeOptions = {
+      ...this._badgeOptions,
+      ...badgeOptions
+    };
   }
 
   /**
