@@ -4,6 +4,8 @@ interface BadgeOptions {
   background: string;
   color: string;
   borderColor: string;
+  bx: number;
+  by: number;
 }
 
 const DEFAULT_BADGE_OPTIONS: BadgeOptions = {
@@ -11,7 +13,10 @@ const DEFAULT_BADGE_OPTIONS: BadgeOptions = {
   radius: 10,
   background: "#da1e28",
   color: "white",
-  borderColor: "white"
+  borderColor: "white",
+  // offset location of badge
+  bx: 15,
+  by: -30,
 };
 
 /**
@@ -85,7 +90,26 @@ export default class Badge {
   public get Diameter(): number {
     return this.Radius * 2;
   }
-
+  /**
+   * The horizontal offset of the badge location to the position of the node
+   *
+   * @readonly
+   * @type {number}
+   * @memberof Badge
+   */
+  public get HorizonalOffset(): number {
+    return this._badgeOptions.bx;
+  }
+  /**
+   * The vertical offset of the badge location to the position of the node
+   *
+   * @readonly
+   * @type {number}
+   * @memberof Badge
+   */
+  public get VerticalOffset(): number {
+    return this._badgeOptions.by;
+  }
   /**
    *Creates an instance of Badge.
    * @param {*} body
@@ -152,7 +176,7 @@ export default class Badge {
   }
 
   /**
-   * draw the bade in place
+   * draw the badge in place
    *
    * @param {*} ctx
    * canvas context
@@ -188,9 +212,9 @@ export default class Badge {
             py: cy * this._body.view.scale + this._body.view.translation.y
           };
         };
-        // Currently just using 15, 30 as "bump" factors, to position the badge in top left corner of node
-        // Perhaps add future parameters for where one would like the the badge to appear
-        const { px, py } = translateCoords(x, y, 15, -30);
+
+        // Draw the image on top of the node, offset by a particular amount
+        const { px, py } = translateCoords(x, y, this.HorizonalOffset, this.VerticalOffset);
         ctx.drawImage(
           img,
           0,
