@@ -4,8 +4,14 @@ interface BadgeOptions {
   background: string;
   color: string;
   borderColor: string;
+  // offset location of badge
   bx: number;
   by: number;
+  // Character offsets and size choice
+  cx?: number;
+  cy?: number;
+  csize?: number; // defaults to diameter size
+  cface?: string; // font to use for character
 }
 
 const DEFAULT_BADGE_OPTIONS: BadgeOptions = {
@@ -14,7 +20,6 @@ const DEFAULT_BADGE_OPTIONS: BadgeOptions = {
   background: "#da1e28",
   color: "white",
   borderColor: "white",
-  // offset location of badge
   bx: 15,
   by: -30,
 };
@@ -22,13 +27,13 @@ const DEFAULT_BADGE_OPTIONS: BadgeOptions = {
 /**
  * Badge class for adding a number / count / asterisk badge to a visible node
  *
- * @export
  * @class Badge
  */
 export default class Badge {
   private _badgeOptions: BadgeOptions = DEFAULT_BADGE_OPTIONS;
+  private _fontOptions: any = { face: "sans-serif" };
   private readonly _body: any;
-  private _showBadge: boolean = false;
+  private _showBadge = false;
 
   /**
    * The text for the badge
@@ -110,129 +115,90 @@ export default class Badge {
   public get VerticalOffset(): number {
     return this._badgeOptions.by;
   }
+
+  public get CharacterHorizontalOffset(): number {
+    return this._badgeOptions.cx || this.Radius;
+  }
+
+  public get CharacterVerticalOffset(): number {
+    return this._badgeOptions.cy || this.Radius;
+  }
+
+  public get CharacterFontSize(): number {
+    return this._badgeOptions.csize || this.Diameter;
+  }
   /**
    *Creates an instance of Badge.
-   * @param {*} body
-   * The body into which this badge is destined to live
-   * @param {*} badgeOptions
-   * The badge options to apply to this instance, see BadgeOptions interface
+   *
+   * @param body - The body into which this badge is destined to live
+   * @param badgeOptions - The badge options to apply to this instance, see BadgeOptions interface
+   * @param fontOptions
    * @memberof Badge
    */
-  constructor(body: any, badgeOptions: any) {
+  constructor(body: any, badgeOptions: any, fontOptions: any) {
     this._body = body;
+    this._fontOptions = { ...this._fontOptions, ...fontOptions };
     this.updateOptions(badgeOptions);
   }
 
-  /**
-   * Fetch the SVG data for the badge
-   *
-   * @private
-   * @param {*} ctx
-   * canvas context
-   * @returns {string}
-   * SVG data
-   * @memberof Badge
-   */
-  private _getSVGData(ctx: any): string {
-    const circleStyle = `fill:${this.Background};stroke:${this.BorderColor};stroke-width:1`;
-    const textStyle = `stroke:${this.Color};fill:${this.Color};font-size:${this.Diameter}px;`;
-    return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-      <svg xmlns="http://www.w3.org/2000/svg"
-      width="${this.Diameter}px"
-      height="${this.Diameter}px"
-      viewBox="0 0 ${this.Diameter} ${this.Diameter}"
-      version="1.1">
-        <g transform="scale(1 1)">
-          <circle
-            r="${this.Radius}"
-            cy="${this.Radius}"
-            cx="${this.Radius}"
-            style="${circleStyle}" />
-            <text
-              y="${1.5 * this.Radius}"
-              x="${0.4 * this.Radius}"
-              style="${textStyle}line-height:1;font-family:sans-serif;">
-            ${this.Text}
-          </text>
-        </g>
-      </svg>
-    `;
+  private drawCircle(ctx: any, x: number, y: number): void {
+    ctx.fillStyle = this.Background;
+    ctx.strokeStyle = this.BorderColor;
+
+    ctx.beginPath();
+    ctx.arc(x, y, this.Radius, 0, Math.PI * 2, true);
+    ctx.closePath();
+
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  private drawText(ctx: any, x: number, y: number): void {
+    ctx.font = `${this.CharacterFontSize}px ${this._fontOptions.face}`;
+    ctx.fillStyle = this.Color;
+
+    ctx.beginPath();
+    ctx.fillText(
+      this.Text,
+      x - this.CharacterHorizontalOffset,
+      y - this.CharacterVerticalOffset
+    );
+    ctx.closePath();
+    ctx.stroke();
   }
 
   /**
    * Updates the badge options
    * Particularly useful when neededing to add or remove a badge on the node by updating it
    *
-   * @param {*} badgeOptions
-   * new set of badge options to apply
+   * @param badgeOptions - new set of badge options to apply
    * @memberof Badge
    */
   public updateOptions(badgeOptions: any) {
     this._showBadge = !!badgeOptions;
     this._badgeOptions = {
       ...this._badgeOptions,
-      ...badgeOptions
+      ...badgeOptions,
     };
+    if (this._badgeOptions.cface) {
+      this._fontOptions.face = this._badgeOptions.cface;
+    }
   }
 
   /**
    * draw the badge in place
    *
-   * @param {*} ctx
-   * canvas context
-   * @param {number} x
-   * horizontal position at which to draw the SVG
-   * @param {number} y
-   * vertical postiion at which to draw the SVG
-   * @returns {void}
+   * @param ctx - canvas context
+   * @param x - horizontal position at which to draw the SVG
+   * @param y - vertical postiion at which to draw the SVG
+   * @returns
    * @memberof Badge
    */
   public draw(ctx: any, x: number, y: number): void {
     if (!this._showBadge) return;
 
-    const svg = new Blob([this._getSVGData(ctx)], {
-      type: "image/svg+xml;charset=utf-8"
-    });
-    const imageUrl = URL.createObjectURL(svg);
-    const img = new Image();
-    const drawImage = () => {
-      try {
-        // Because this uses an SVG, it places it in position within the DOM, so we convert co-ordinates from
-        // canvasToDom, but the original function is outside of scope from here(or the node object calling here...)
-        const translateCoords = (
-          x: number,
-          y: number,
-          bx: number = 0,
-          by: number = 0
-        ) => {
-          const cx = x + bx;
-          const cy = y + by;
-          return {
-            px: cx * this._body.view.scale + this._body.view.translation.x,
-            py: cy * this._body.view.scale + this._body.view.translation.y
-          };
-        };
-
-        // Draw the image on top of the node, offset by a particular amount
-        const { px, py } = translateCoords(x, y, this.HorizonalOffset, this.VerticalOffset);
-        ctx.drawImage(
-          img,
-          0,
-          0,
-          this.Diameter,
-          this.Diameter,
-          px,
-          py,
-          this.Diameter * this._body.view.scale,
-          this.Diameter * this._body.view.scale
-        );
-      } finally {
-        // this code in a finally handler in order to ensure that the resources are cleaned up appropirately
-        img.removeEventListener("load", drawImage);
-        URL.revokeObjectURL(imageUrl);
-      }
-    };
-    img.addEventListener("load", drawImage);
-    img.src = imageUrl;
+    // Draw the image on top of the node, offset by a particular amount
+    this.drawCircle(ctx, x + this.HorizonalOffset, y - this.VerticalOffset);
+    this.drawText(ctx, x + this.HorizonalOffset, y - this.VerticalOffset);
   }
 }
