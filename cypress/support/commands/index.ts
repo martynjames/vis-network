@@ -1,5 +1,7 @@
 export * from "./types";
 
+export * from "./vis-assert-event";
+export * from "./vis-assert-selection";
 export * from "./vis-check-ids";
 export * from "./vis-click-betweek-points";
 export * from "./vis-click-edge";

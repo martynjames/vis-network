@@ -1,7 +1,6 @@
 import { DragPath } from "./types";
 
 declare global {
-  // eslint-disable-next-line no-redeclare
   namespace Cypress {
     interface Chainable<Subject> {
       /**
@@ -14,12 +13,11 @@ declare global {
   }
 }
 
-// eslint-disable-next-line require-jsdoc
 export function visDrag(paths: readonly DragPath[]): void {
   for (const { button, from, shiftKey, to } of paths) {
     cy.get("#mynetwork canvas").trigger("pointerdown", from.x, from.y, {
       button,
-      shiftKey
+      shiftKey,
     });
     for (const relativeDistance of new Array(10).fill(null).map(
       (_v, i, array): number =>
@@ -28,17 +26,17 @@ export function visDrag(paths: readonly DragPath[]): void {
     )) {
       cy.get("#mynetwork canvas").trigger(
         "pointermove",
-        from.x + to.x * relativeDistance,
-        from.y + to.y * relativeDistance,
+        from.x + (to.x - from.x) * relativeDistance,
+        from.y + (to.y - from.y) * relativeDistance,
         {
           button,
-          shiftKey
+          shiftKey,
         }
       );
     }
     cy.get("#mynetwork canvas").trigger("pointerup", to.x, to.y, {
       button,
-      shiftKey
+      shiftKey,
     });
   }
 }

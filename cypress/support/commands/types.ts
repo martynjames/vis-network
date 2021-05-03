@@ -1,8 +1,9 @@
-import {
+import type {
   DataSetEdges,
   DataSetNodes,
   Network,
-  Options
+  NetworkEvents,
+  Options,
 } from "../../../declarations/entry-standalone";
 
 // TODO: Convert this to type only export when ESLint and Prettier support the
@@ -11,10 +12,19 @@ export * from "../../../standalone";
 
 export interface VisGlobals {
   edges: DataSetEdges;
+  eventQueue: Record<NetworkEvents, { params: any }[]>;
   lastEvents: Record<string, any>;
   network: Network;
   nodes: DataSetNodes;
 }
+
+export type VisWindow = {
+  visEdges: VisGlobals["edges"];
+  visEventQueue: VisGlobals["eventQueue"];
+  visLastEvents: VisGlobals["lastEvents"];
+  visNetwork: VisGlobals["network"];
+  visNodes: VisGlobals["nodes"];
+};
 
 export interface Point {
   x: number;
@@ -41,3 +51,5 @@ export interface UniversalNetworkConfig {
 export interface UniversalConfig extends UniversalNetworkConfig {
   version: null | "latest";
 }
+
+export type IdType = string | number;

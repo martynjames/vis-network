@@ -1,21 +1,21 @@
 // These imports are there only for their types. Their values can't be used as
 // this will be loaded in a web browser without bundling.
-import * as visNetworkStandalone from "../../standalone";
-import * as visUtil from "vis-util";
-import { Options } from "../../standalone";
-import { UniversalConfig } from "../support/commands/types";
+import type * as visNetworkStandalone from "../../standalone";
+import type * as visUtil from "vis-util";
+import type { Options } from "../../standalone";
+import type { UniversalConfig, VisWindow } from "../support/commands/types";
 type VisNetworkStandalone = typeof visNetworkStandalone;
 type VisUtil = typeof visUtil;
 
 (async (): Promise<void> => {
   // Wait for all the assets to load.
-  await new Promise((resolve): void => {
+  await new Promise<void>((resolve): void => {
     if (document.readyState === "complete") {
       // Already loaded.
       resolve();
     } else {
       // Not loaded yet.
-      window.addEventListener("load", resolve);
+      window.addEventListener("load", (): void => void resolve());
     }
   });
 
@@ -27,22 +27,27 @@ type VisUtil = typeof visUtil;
     throw new Error("Element #mynetwork was not found in the DOM.");
   }
 
-  const $events = document.getElementById("events")!;
+  const $events = document.getElementById("events");
   if ($events == null) {
     throw new Error("Element #events was not found in the DOM.");
   }
 
-  const $selection = document.getElementById("selection")!;
+  const $selection = document.getElementById("selection");
   if ($selection == null) {
     throw new Error("Element #selection was not found in the DOM.");
   }
 
-  const $version = document.getElementById("version")!;
+  const $selectionJSON = document.getElementById("selection-json");
+  if ($selectionJSON == null) {
+    throw new Error("Element #selection-json was not found in the DOM.");
+  }
+
+  const $version = document.getElementById("version");
   if ($version == null) {
     throw new Error("Element #version was not found in the DOM.");
   }
 
-  const $status = document.getElementById("status")!;
+  const $status = document.getElementById("status");
   if ($status == null) {
     throw new Error("Element #status was not found in the DOM.");
   }
@@ -112,7 +117,7 @@ type VisUtil = typeof visUtil;
     {
       // Prevent random changes so that screenshots can be taken reliably.
       layout: {
-        randomSeed: 77
+        randomSeed: 77,
       },
 
       // Common configuration helpers.
@@ -125,7 +130,7 @@ type VisUtil = typeof visUtil;
             ): void => {
               callback({
                 ...nodeData,
-                label: "Edit: " + ++editNumber
+                label: "Edit: " + ++editNumber,
               });
             },
             editEdge: {
@@ -135,13 +140,13 @@ type VisUtil = typeof visUtil;
               ): void => {
                 callback({
                   ...edgeData,
-                  label: "Edit: " + ++editNumber
+                  label: "Edit: " + ++editNumber,
                 });
-              }
-            }
+              },
+            },
           }
         : false,
-      physics: config.physics ? true : false
+      physics: config.physics ? true : false,
     },
     // Raw options to override anything set above.
     config.options ?? {}
@@ -155,8 +160,6 @@ type VisUtil = typeof visUtil;
     names: readonly (string | number)[],
     content: string | number
   ): void => {
-    names = Array.isArray(names) ? names : [names];
-
     const elem = document.createElement("pre");
     elem.classList.add(...names.map((value): string => "" + value));
     elem.innerText = "" + content;
@@ -191,18 +194,30 @@ type VisUtil = typeof visUtil;
     });
   });
 
+  const updateSelectionJSON = (): void => {
+    const selection = network.getSelection();
+    $selectionJSON.innerText = JSON.stringify({
+      nodes: [...selection.nodes].sort(),
+      edges: [...selection.edges].sort(),
+    });
+  };
+  // Make sure the selection is always filled in.
+  updateSelectionJSON();
+
   // Selection events:
   ([
     "deselectEdge",
     "deselectNode",
     "select",
     "selectEdge",
-    "selectNode"
+    "selectNode",
   ] as const).forEach((eventName): void => {
+    network.on(eventName, updateSelectionJSON);
+
     network.on(eventName, (): void => {
       const selection = [
         ["node", network.getSelectedNodes()],
-        ["edge", network.getSelectedEdges()]
+        ["edge", network.getSelectedEdges()],
       ] as const;
 
       // Empty the root element.
@@ -222,10 +237,55 @@ type VisUtil = typeof visUtil;
     });
   });
 
-  (window as any).visEdges = edges;
-  (window as any).visLastEvents = {};
-  (window as any).visNetwork = network;
-  (window as any).visNodes = nodes;
+  // Event queue:
+  const eventQueue: VisWindow["visEventQueue"] = {} as any;
+  ([
+    "afterDrawing",
+    "animationFinished",
+    "beforeDrawing",
+    "blurEdge",
+    "blurNode",
+    "click",
+    "configChange",
+    "controlNodeDragEnd",
+    "controlNodeDragging",
+    "deselectEdge",
+    "deselectNode",
+    "doubleClick",
+    "dragEnd",
+    "dragStart",
+    "dragging",
+    "hidePopup",
+    "hold",
+    "hoverEdge",
+    "hoverNode",
+    "initRedraw",
+    "oncontext",
+    "release",
+    "resize",
+    "select",
+    "selectEdge",
+    "selectNode",
+    "showPopup",
+    "stabilizationIterationsDone",
+    "stabilizationProgress",
+    "stabilized",
+    "startStabilizing",
+    "zoom",
+  ] as const).forEach((eventName): void => {
+    eventQueue[eventName] = [];
+    network.on(eventName, (params: any): void => {
+      eventQueue[eventName].push({ params });
+    });
+  });
+
+  Object.assign<any, VisWindow>(window, {
+    visEdges: edges,
+    visEventQueue: eventQueue,
+    visLastEvents: {},
+    visNetwork: network,
+    visNodes: nodes,
+  });
 
   $status.innerText = "Ready";
 })();

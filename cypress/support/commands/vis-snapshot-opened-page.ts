@@ -3,7 +3,6 @@ import { deepObjectAssign } from "vis-util";
 import { VisVisitPageOptions } from "./vis-visit-universal";
 
 declare global {
-  // eslint-disable-next-line no-redeclare
   namespace Cypress {
     interface Chainable<Subject> {
       /**
@@ -21,28 +20,33 @@ declare global {
 }
 
 export interface VisSnapshotOpenedPageOptions extends VisVisitPageOptions {
-  moveTo?: {
-    position?: { x?: number; y?: number };
-    scale?: number;
-  };
+  moveTo?:
+    | false
+    | {
+        position?: { x?: number; y?: number };
+        scale?: number;
+      };
 }
 
-// eslint-disable-next-line require-jsdoc
 export function visSnapshotOpenedPage(
   label: number | string,
   options: VisSnapshotOpenedPageOptions = {}
 ): void {
-  cy.visRun(({ network }): void => {
-    network.moveTo(
-      deepObjectAssign<MoveToOptions>(
-        {
-          position: { x: 0, y: 0 },
-          scale: 1,
-        },
-        options.moveTo ?? {}
-      )
-    );
-  });
+  const moveTo = options.moveTo;
+  if (moveTo !== false) {
+    cy.visRun(({ network }): void => {
+      network.moveTo(
+        deepObjectAssign<MoveToOptions>(
+          {
+            position: { x: 0, y: 0 },
+            scale: 1,
+          },
+          moveTo ?? {}
+        )
+      );
+    });
+  }
+
   cy.get("#mynetwork canvas").compareSnapshot(
     typeof label === "string" ? label : ("" + label).padStart(3, "0")
   );
