@@ -478,6 +478,8 @@ const allOptions: OptionsConfig = {
       springConstant: { number },
       damping: { number },
       avoidOverlap: { number },
+      massRecursionLimit: { number },
+      regionalRecursionLimit: { number },
       __type__: { object },
     },
     forceAtlas2Based: {
@@ -488,6 +490,8 @@ const allOptions: OptionsConfig = {
       springConstant: { number },
       damping: { number },
       avoidOverlap: { number },
+      massRecursionLimit: { number },
+      regionalRecursionLimit: { number },
       __type__: { object },
     },
     repulsion: {
@@ -784,6 +788,8 @@ const configureOptions: ConfiguratorConfig = {
       springConstant: [0.04, 0, 1.2, 0.005],
       damping: [0.09, 0, 1, 0.01],
       avoidOverlap: [0, 0, 1, 0.01],
+      massRecursionLimit: [100, 1, 1000, 1],
+      regionalRecursionLimit: [10000, 100, 100000, 1],
     },
     forceAtlas2Based: {
       theta: [0.5, 0.1, 1, 0.05],
@@ -793,6 +799,8 @@ const configureOptions: ConfiguratorConfig = {
       springConstant: [0.08, 0, 1.2, 0.005],
       damping: [0.4, 0, 1, 0.01],
       avoidOverlap: [0, 0, 1, 0.01],
+      massRecursionLimit: [100, 1, 1000, 1],
+      regionalRecursionLimit: [10000, 100, 100000, 1],
     },
     repulsion: {
       centralGravity: [0.2, 0, 10, 0.05],
